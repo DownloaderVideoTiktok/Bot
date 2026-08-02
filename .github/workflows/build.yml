@@ -652,9 +652,11 @@ jobs:
             # Fix 1: SDK constraint terlalu tinggi (menangani ^3.x.x dan >=3.x.x)
             if grep -q "requires SDK version" "$PUB_LOG" || grep -q "requires Dart SDK version" "$PUB_LOG"; then
               echo "Fix: Menurunkan SDK constraint"
-              # Ganti pola seperti sdk: "^3.8.1" atau sdk: ^3.8.1 atau sdk: ">=3.8.1"
-              sed -i -E "s/sdk:[[:space:]]*['\"]?[\^>=]*3\.[0-9]+(\.[0-9]+)?['\"]?/sdk: \">=3.6.0 <4.0.0\"/g" pubspec.yaml || true
-              sed -i -E "s/sdk:[[:space:]]*['\"]?[\^>=]*3\.[0-9]+['\"]?/sdk: \">=3.6.0 <4.0.0\"/g" pubspec.yaml || true
+              # Ganti pola seperti sdk: "^3.8.1" atau sdk: '>=3.8.1 <4.0.0' -- match SELURUH nilai yang di-quote
+              # supaya tidak menyisakan sisa teks (mis. " <4.0.0") yang membuat YAML rusak.
+              sed -i -E "s/sdk:[[:space:]]*['\"][^'\"]*['\"]/sdk: \">=3.6.0 <4.0.0\"/g" pubspec.yaml || true
+              # Fallback untuk constraint tanpa quote, mis. sdk: ^3.8.1
+              sed -i -E "s/sdk:[[:space:]]*[\^>=]+3\.[0-9]+(\.[0-9]+)?([[:space:]]*<[^[:space:]]+)?[[:space:]]*\$/sdk: \">=3.6.0 <4.0.0\"/g" pubspec.yaml || true
               FIXED=true
             fi
 
