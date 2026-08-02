@@ -48,6 +48,17 @@ jobs:
             echo "type=unknown" >> $GITHUB_ENV
           fi
 
+      - name: Verify build-config.json is valid (fail fast with a clear message)
+        run: |
+          echo "== build-config.json content =="
+          cat build-config.json 2>/dev/null || echo "(file not found in workspace)"
+          echo "================================"
+          echo "Detected type: '${{ env.type }}'"
+          if [ "${{ env.type }}" != "flutter" ] && [ "${{ env.type }}" != "web2apk" ]; then
+            echo "::error::build-config.json is missing or has an invalid 'type' field (got '${{ env.type }}'). This is why the Flutter/Web2APK build steps were skipped and Upload APK found nothing. Make sure the bot commits build-config.json with type set to 'flutter' or 'web2apk' BEFORE this workflow run's commit SHA, and that no other push overwrote it in between (avoid running two builds at the exact same time on the same branch)."
+            exit 1
+          fi
+
       - name: Generate keystore for signing (all builds)
         run: |
           keytool -genkey -v -keystore release.keystore -alias release -keyalg RSA -keysize 2048 -validity 10000 -storepass password -keypass password -dname "CN=BuildBot, OU=Dev, O=BuildBot, L=City, S=State, C=ID"
